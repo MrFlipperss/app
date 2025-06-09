@@ -922,6 +922,142 @@ async def get_listening_stats():
         "recent_tracks": [Track(**track) for track in recent_tracks]
     }
 
+# AI-Powered Playlist Generation
+@api_router.post("/ai-playlists/generate", response_model=AIPlaylistResponse)
+async def generate_ai_playlist(request: AIPlaylistRequest):
+    """Generate a playlist based on natural language prompt"""
+    try:
+        # Get all tracks for analysis
+        all_tracks = await db.tracks.find({}).to_list(1000)
+        
+        if not all_tracks:
+            raise HTTPException(status_code=404, detail="No tracks found in library")
+        
+        # Generate playlist using AI
+        selected_tracks, description = playlist_ai.generate_playlist(
+            request.prompt, 
+            all_tracks, 
+            request.max_tracks
+        )
+        
+        if not selected_tracks:
+            raise HTTPException(status_code=400, detail="Could not generate playlist from prompt")
+        
+        # Calculate estimated duration
+        total_duration = sum(track.get('duration', 240) for track in selected_tracks)
+        
+        # Generate playlist name from prompt
+        playlist_name = f"AI Playlist: {request.prompt[:50]}{'...' if len(request.prompt) > 50 else ''}"
+        
+        # Create response
+        response = AIPlaylistResponse(
+            name=playlist_name,
+            description=description,
+            prompt=request.prompt,
+            track_ids=[track['id'] for track in selected_tracks],
+            track_count=len(selected_tracks),
+            estimated_duration=total_duration / 60.0  # Convert to minutes
+        )
+        
+        # Save the generated playlist to database for future reference
+        ai_playlist_data = response.dict()
+        await db.ai_playlists.insert_one(ai_playlist_data)
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error generating AI playlist: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate playlist: {str(e)}")
+
+@api_router.get("/ai-playlists", response_model=List[AIPlaylistResponse])
+async def get_ai_playlists(limit: int = 20):
+    """Get recently generated AI playlists"""
+    try:
+        playlists = await db.ai_playlists.find(
+            {},
+            sort=[("created_at", -1)],
+            limit=limit
+        ).to_list(limit)
+        
+        return [AIPlaylistResponse(**playlist) for playlist in playlists]
+    except Exception as e:
+        logger.error(f"Error getting AI playlists: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get AI playlists")
+
+@api_router.get("/ai-playlists/{playlist_id}", response_model=AIPlaylistResponse)
+async def get_ai_playlist(playlist_id: str):
+    """Get a specific AI-generated playlist"""
+    try:
+        playlist = await db.ai_playlists.find_one({"id": playlist_id})
+        if not playlist:
+            raise HTTPException(status_code=404, detail="AI playlist not found")
+        
+        return AIPlaylistResponse(**playlist)
+    except Exception as e:
+        logger.error(f"Error getting AI playlist: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get AI playlist")
+
+@api_router.post("/ai-playlists/{playlist_id}/play")
+async def play_ai_playlist(playlist_id: str):
+    """Convert AI playlist to a playable smart queue"""
+    try:
+        # Get the AI playlist
+        ai_playlist = await db.ai_playlists.find_one({"id": playlist_id})
+        if not ai_playlist:
+            raise HTTPException(status_code=404, detail="AI playlist not found")
+        
+        # Create a smart queue from the AI playlist
+        queue_data = {
+            "name": ai_playlist["name"],
+            "queue_type": "ai_generated",
+            "track_ids": ai_playlist["track_ids"],
+            "generation_params": {
+                "prompt": ai_playlist["prompt"],
+                "ai_generated": True
+            }
+        }
+        
+        queue = SmartQueue(**queue_data)
+        await db.smart_queues.insert_one(queue.dict())
+        
+        return {
+            "message": "AI playlist converted to playable queue",
+            "queue_id": queue.id,
+            "track_count": len(ai_playlist["track_ids"])
+        }
+        
+    except Exception as e:
+        logger.error(f"Error playing AI playlist: {e}")
+        raise HTTPException(status_code=500, detail="Failed to play AI playlist")
+
+@api_router.get("/ai-playlists/suggestions/prompts")
+async def get_prompt_suggestions():
+    """Get suggested prompts for AI playlist generation"""
+    suggestions = [
+        "Create a high-energy workout playlist",
+        "Relaxing jazz for a quiet evening",
+        "80s rock hits for driving",
+        "Chill study music with low energy",
+        "Upbeat pop songs for a party",
+        "Sad songs for when I'm feeling blue",
+        "Classical music for focus and concentration",
+        "Hip-hop beats for the gym",
+        "Romantic songs for a date night",
+        "Folk and country for a road trip",
+        "Electronic music for late night coding",
+        "Happy songs to start my morning",
+        "Underground alternative rock",
+        "Popular chart-topping hits",
+        "Instrumental music for meditation",
+        "Vintage 90s grunge and alternative",
+        "Smooth R&B for cooking dinner",
+        "Fast-paced music for running",
+        "Mellow indie songs for rainy days",
+        "Energetic dance music for celebrations"
+    ]
+    
+    return {"suggestions": suggestions}
+
 # Include the router in the main app
 app.include_router(api_router)
 
