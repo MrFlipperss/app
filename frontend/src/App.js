@@ -116,7 +116,6 @@ function App() {
   const [playbackSession, setPlaybackSession] = useState(null);
   
   // UI state
-  const [currentView, setCurrentView] = useState('library');
   const [showQueue, setShowQueue] = useState(false);
   const [queueViewMode, setQueueViewMode] = useState('queue'); // 'queue' or 'info'
   const [theme, setTheme] = useState('dark');
