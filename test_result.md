@@ -214,6 +214,18 @@ backend:
       - working: true
         agent: "testing"
         comment: "Successfully tested audio streaming. The system correctly streams audio files and updates play counts after streaming."
+        
+  - task: "Album support and metadata aggregation"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Successfully tested album endpoints. The system correctly groups tracks by album, generates consistent album IDs using MD5 hash, aggregates album metadata (track count, duration, genres, play count), and provides album listing with pagination and filtering."
 
 frontend:
   - task: "Spotify-like UI design"
@@ -300,6 +312,7 @@ test_plan:
     - "Audio playback functionality"
     - "Queue management and switching"
     - "Smart mix generation and playback"
+    - "Album support and metadata aggregation"
   stuck_tasks: []
   test_all: true
   test_priority: "high_first"
@@ -309,3 +322,5 @@ agent_communication:
     message: "Comprehensive offline music player built with all requested features. Fixed libmagic dependency and module import issues. Ready for testing with real music files."
   - agent: "testing"
     message: "Completed comprehensive testing of all backend functionality. All features are working correctly including folder scanning, metadata extraction, AI audio analysis, smart queue management, playback sessions, smart mix generation, audio streaming, and analytics. Created test audio files for testing and verified all API endpoints are functioning as expected."
+  - agent: "testing"
+    message: "Successfully tested album support features. The system correctly groups tracks by album, generates consistent album IDs using MD5 hash, aggregates album metadata (track count, duration, genres, play count), and provides album listing with pagination and filtering. Fixed issues with MongoDB aggregation pipeline for album endpoints."
