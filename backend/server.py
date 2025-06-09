@@ -20,6 +20,10 @@ import hashlib
 import io
 import base64
 from PIL import Image
+import sys
+from pathlib import Path
+backend_dir = Path(__file__).parent
+sys.path.insert(0, str(backend_dir))
 from audio_analyzer import AudioAnalyzer, RecommendationEngine
 import numpy as np
 
