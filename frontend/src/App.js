@@ -917,6 +917,77 @@ function App() {
               </div>
             )}
 
+            {currentView === 'albums' && (
+              <div className="albums-view">
+                <div className="section-header">
+                  <h2>Albums</h2>
+                  <p>{albums.length} albums in your library</p>
+                </div>
+                
+                <div className="albums-grid">
+                  {albums.map(album => (
+                    <div key={album.id} className="album-card">
+                      <div 
+                        className="album-artwork"
+                        onClick={async () => {
+                          try {
+                            const response = await axios.get(`${API}/albums/${album.id}`);
+                            const albumTracks = response.data.tracks;
+                            if (albumTracks.length > 0) {
+                              await playTrack(albumTracks[0], albumTracks, 'user');
+                            }
+                          } catch (error) {
+                            console.error('Error playing album:', error);
+                          }
+                        }}
+                      >
+                        {album.artwork_data ? (
+                          <img 
+                            src={`data:image/jpeg;base64,${album.artwork_data}`}
+                            alt={album.name}
+                          />
+                        ) : (
+                          <div className="no-artwork">
+                            <MusicIcon />
+                          </div>
+                        )}
+                        <div className="play-overlay">
+                          <PlayIcon />
+                        </div>
+                      </div>
+                      
+                      <div className="album-info">
+                        <h4 className="album-title">{album.name}</h4>
+                        <p className="album-artist">{album.artist}</p>
+                        <div className="album-meta">
+                          <span>{album.track_count} tracks</span>
+                          {album.year && <span>{album.year}</span>}
+                          <span>{formatTime(album.total_duration)}</span>
+                        </div>
+                        {album.genres && album.genres.length > 0 && (
+                          <div className="album-genres">
+                            {album.genres.slice(0, 2).map(genre => (
+                              <span key={genre} className="genre-tag">{genre}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {albums.length === 0 && (
+                  <div className="empty-albums">
+                    <div className="empty-icon">
+                      <MusicIcon />
+                    </div>
+                    <h3>No albums found</h3>
+                    <p>Add music folders to see your albums organized here</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {currentView === 'smart' && (
               <div className="smart-view">
                 <div className="section-header">
