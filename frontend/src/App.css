@@ -554,6 +554,39 @@ body {
   font-weight: 600;
 }
 
+.ai-genre {
+  color: #9333ea !important;
+  font-weight: 600;
+}
+
+.mood {
+  color: #f59e0b !important;
+  font-weight: 600;
+}
+
+.add-to-queue-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(29, 185, 84, 0.9);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  opacity: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.track-card:hover .add-to-queue-btn {
+  opacity: 1;
+}
+
+.add-to-queue-btn:hover {
+  background-color: #1db954;
+}
+
 /* Folders View */
 .add-folder {
   display: flex;
