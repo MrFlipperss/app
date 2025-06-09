@@ -510,6 +510,81 @@ function App() {
     }
   };
 
+  const generateAiPlaylist = async () => {
+    if (!aiPrompt.trim() || isGeneratingPlaylist) return;
+    
+    setIsGeneratingPlaylist(true);
+    try {
+      const response = await axios.post(`${API}/ai-playlists/generate`, {
+        prompt: aiPrompt.trim(),
+        max_tracks: 25,
+        duration_minutes: 60
+      });
+      
+      const aiPlaylist = response.data;
+      
+      // Play the generated playlist immediately
+      await axios.post(`${API}/ai-playlists/${aiPlaylist.id}/play`);
+      
+      // Get the tracks for the playlist
+      const playlistTracks = await Promise.all(
+        aiPlaylist.track_ids.map(async (trackId) => {
+          try {
+            const trackResponse = await axios.get(`${API}/tracks/${trackId}`);
+            return trackResponse.data;
+          } catch {
+            return null;
+          }
+        })
+      );
+      
+      const validTracks = playlistTracks.filter(track => track !== null);
+      if (validTracks.length > 0) {
+        await playTrack(validTracks[0], validTracks, 'user');
+      }
+      
+      // Refresh AI playlists list
+      loadAiPlaylists();
+      
+      // Clear the prompt and close the modal
+      setAiPrompt('');
+      setShowAiPlaylist(false);
+      
+      alert(`Generated "${aiPlaylist.name}" with ${aiPlaylist.track_count} tracks!`);
+    } catch (error) {
+      console.error('Error generating AI playlist:', error);
+      alert('Failed to generate playlist. Please try a different prompt.');
+    } finally {
+      setIsGeneratingPlaylist(false);
+    }
+  };
+
+  const playAiPlaylist = async (aiPlaylist) => {
+    try {
+      // Convert AI playlist to playable queue
+      await axios.post(`${API}/ai-playlists/${aiPlaylist.id}/play`);
+      
+      // Get the tracks for the playlist
+      const playlistTracks = await Promise.all(
+        aiPlaylist.track_ids.map(async (trackId) => {
+          try {
+            const response = await axios.get(`${API}/tracks/${trackId}`);
+            return response.data;
+          } catch {
+            return null;
+          }
+        })
+      );
+      
+      const validTracks = playlistTracks.filter(track => track !== null);
+      if (validTracks.length > 0) {
+        await playTrack(validTracks[0], validTracks, 'user');
+      }
+    } catch (error) {
+      console.error('Error playing AI playlist:', error);
+    }
+  };
+
   const filteredTracks = getFilteredTracks();
 
   return (
