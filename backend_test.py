@@ -130,6 +130,10 @@ class MusicPlayerAPITest(unittest.TestCase):
             folders = response.json()
             self.assertIsInstance(folders, list)
             print(f"✅ Successfully retrieved {len(folders)} folders")
+            
+            # Save folder ID for rescan test
+            if folders:
+                self.test_folder_id = folders[0]["id"]
         except Exception as e:
             print(f"❌ Failed to get folders: {str(e)}")
         
@@ -147,6 +151,42 @@ class MusicPlayerAPITest(unittest.TestCase):
             print(f"   - AI Processed: {status.get('ai_processed', 0)} files")
         except Exception as e:
             print(f"❌ Failed to get scan status: {str(e)}")
+        
+        # Test rescan folder if we have a folder ID
+        if hasattr(self, 'test_folder_id'):
+            print(f"Testing POST /api/folders/{self.test_folder_id}/scan...")
+            try:
+                response = requests.post(f"{API_URL}/folders/{self.test_folder_id}/scan")
+                self.assertEqual(response.status_code, 200)
+                print("✅ Successfully initiated folder rescan")
+                
+                # Wait for scan to complete (up to 10 seconds)
+                print("Waiting for scan to complete...")
+                scan_completed = False
+                for _ in range(10):
+                    time.sleep(1)
+                    status_response = requests.get(f"{API_URL}/scan-status")
+                    if status_response.status_code == 200:
+                        status = status_response.json()
+                        if status["status"] == "completed" or status["status"] == "error":
+                            scan_completed = True
+                            print(f"✅ Scan completed with status: {status['status']}")
+                            break
+                
+                if not scan_completed:
+                    print("⚠️ Scan did not complete within timeout period")
+            except Exception as e:
+                print(f"❌ Failed to rescan folder: {str(e)}")
+        
+        # Test folder removal if we have a folder ID
+        if hasattr(self, 'test_folder_id'):
+            print(f"Testing DELETE /api/folders/{self.test_folder_id}...")
+            try:
+                response = requests.delete(f"{API_URL}/folders/{self.test_folder_id}")
+                self.assertEqual(response.status_code, 200)
+                print("✅ Successfully removed folder")
+            except Exception as e:
+                print(f"❌ Failed to remove folder: {str(e)}")
     
     def test_03_music_library(self):
         """Test music library endpoints"""
