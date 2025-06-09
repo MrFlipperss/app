@@ -1132,44 +1132,169 @@ function App() {
           </div>
         </div>
 
-        {/* Queue Sidebar */}
+        {/* Enhanced Queue Sidebar */}
         {showQueue && (
-          <div className="queue-sidebar">
+          <div className="queue-sidebar enhanced">
             <div className="queue-header">
-              <h3>Queue</h3>
-              <button onClick={() => setShowQueue(false)}>×</button>
-            </div>
-            
-            <div className="queue-tabs">
-              <button 
-                className={currentQueueType === 'user' ? 'active' : ''}
-                onClick={() => setCurrentQueueType('user')}
-              >
-                Your Queue ({userQueue.length})
-              </button>
-              <button 
-                className={currentQueueType === 'auto' ? 'active' : ''}
-                onClick={() => setCurrentQueueType('auto')}
-              >
-                Auto Queue ({autoQueue.length})
-              </button>
-            </div>
-            
-            <div className="queue-list">
-              {(currentQueueType === 'user' ? userQueue : autoQueue).map((track, index) => (
-                <div 
-                  key={`${track.id}-${index}`}
-                  className={`queue-item ${index === currentQueueIndex && currentQueueType === (currentQueueType) ? 'current' : ''}`}
-                  onClick={() => playTrack(track, currentQueueType === 'user' ? userQueue : autoQueue, currentQueueType)}
+              <div className="queue-title-section">
+                <h3>Now Playing</h3>
+                <button onClick={() => setShowQueue(false)}>×</button>
+              </div>
+              
+              {/* Queue/Info Toggle */}
+              <div className="view-mode-toggle">
+                <button 
+                  className={queueViewMode === 'queue' ? 'active' : ''}
+                  onClick={() => setQueueViewMode('queue')}
                 >
-                  <div className="queue-track-info">
-                    <h5>{track.title || track.filename}</h5>
-                    <p>{track.artist}</p>
-                  </div>
-                  {track.ai_genre && <span className="queue-genre">{track.ai_genre}</span>}
-                </div>
-              ))}
+                  Queue
+                </button>
+                <button 
+                  className={queueViewMode === 'info' ? 'active' : ''}
+                  onClick={() => setQueueViewMode('info')}
+                >
+                  Info
+                </button>
+              </div>
             </div>
+            
+            {queueViewMode === 'queue' ? (
+              <>
+                <div className="queue-tabs">
+                  <button 
+                    className={currentQueueType === 'user' ? 'active' : ''}
+                    onClick={() => setCurrentQueueType('user')}
+                  >
+                    Your Queue ({userQueue.length})
+                  </button>
+                  <button 
+                    className={currentQueueType === 'auto' ? 'active' : ''}
+                    onClick={() => setCurrentQueueType('auto')}
+                  >
+                    Auto Queue ({autoQueue.length})
+                  </button>
+                </div>
+                
+                <div className="queue-list">
+                  {(currentQueueType === 'user' ? userQueue : autoQueue).map((track, index) => (
+                    <div 
+                      key={`${track.id}-${index}`}
+                      className={`queue-item ${index === currentQueueIndex && currentQueueType === (currentQueueType) ? 'current' : ''}`}
+                      onClick={() => playTrack(track, currentQueueType === 'user' ? userQueue : autoQueue, currentQueueType)}
+                    >
+                      <div className="queue-track-artwork">
+                        {track.artwork_data ? (
+                          <img 
+                            src={`data:image/jpeg;base64,${track.artwork_data}`}
+                            alt={track.album}
+                          />
+                        ) : (
+                          <div className="no-artwork-small">
+                            <MusicIcon />
+                          </div>
+                        )}
+                      </div>
+                      <div className="queue-track-info">
+                        <h5>{track.title || track.filename}</h5>
+                        <p>{track.artist}</p>
+                        <span className="track-duration">{formatTime(track.duration)}</span>
+                      </div>
+                      {track.ai_genre && <span className="queue-genre">{track.ai_genre}</span>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              /* Info Mode */
+              <div className="track-info-panel">
+                {currentTrack ? (
+                  <>
+                    <div className="current-track-large">
+                      <div className="track-artwork-large">
+                        {currentTrack.artwork_data ? (
+                          <img 
+                            src={`data:image/jpeg;base64,${currentTrack.artwork_data}`}
+                            alt={currentTrack.album}
+                          />
+                        ) : (
+                          <div className="no-artwork-large">
+                            <MusicIcon />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="track-info-details">
+                        <h2>{currentTrack.title || currentTrack.filename}</h2>
+                        <h3>{currentTrack.artist || 'Unknown Artist'}</h3>
+                        <h4>{currentTrack.album || 'Unknown Album'}</h4>
+                        
+                        {currentTrack.year && (
+                          <p className="track-year">{currentTrack.year}</p>
+                        )}
+                        
+                        <div className="track-metadata">
+                          <div className="metadata-item">
+                            <span className="label">Format:</span>
+                            <span className="value">{currentTrack.file_format}</span>
+                          </div>
+                          {currentTrack.bitrate && (
+                            <div className="metadata-item">
+                              <span className="label">Bitrate:</span>
+                              <span className="value">{currentTrack.bitrate} kbps</span>
+                            </div>
+                          )}
+                          {currentTrack.sample_rate && (
+                            <div className="metadata-item">
+                              <span className="label">Sample Rate:</span>
+                              <span className="value">{currentTrack.sample_rate} Hz</span>
+                            </div>
+                          )}
+                          <div className="metadata-item">
+                            <span className="label">Duration:</span>
+                            <span className="value">{formatTime(currentTrack.duration)}</span>
+                          </div>
+                          {currentTrack.play_count > 0 && (
+                            <div className="metadata-item">
+                              <span className="label">Play Count:</span>
+                              <span className="value">{currentTrack.play_count}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="track-ai-info">
+                          {currentTrack.ai_genre && (
+                            <div className="ai-tag genre-tag">
+                              <span className="label">Genre:</span>
+                              <span className="value">{currentTrack.ai_genre}</span>
+                            </div>
+                          )}
+                          {currentTrack.mood && (
+                            <div className="ai-tag mood-tag">
+                              <span className="label">Mood:</span>
+                              <span className="value">{currentTrack.mood}</span>
+                            </div>
+                          )}
+                          {currentTrack.energy !== undefined && (
+                            <div className="ai-tag energy-tag">
+                              <span className="label">Energy:</span>
+                              <span className="value">{Math.round(currentTrack.energy * 100)}%</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="no-track-info">
+                    <div className="no-track-icon">
+                      <MusicIcon />
+                    </div>
+                    <h3>No track playing</h3>
+                    <p>Select a track to see detailed information</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
