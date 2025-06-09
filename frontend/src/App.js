@@ -86,49 +86,36 @@ const InfiniteIcon = () => (
 
 function App() {
   // Enhanced state management
-  const [currentView, setCurrentView] = useState('library');
-  const [tracks, setTracks] = useState([]);
-  const [artists, setArtists] = useState([]);
-  const [albums, setAlbums] = useState([]);
   const [playlists, setPlaylists] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [smartMixes, setSmartMixes] = useState([]);
   const [aiPlaylists, setAiPlaylists] = useState([]);
-  const [folders, setFolders] = useState([]);
-  const [genres, setGenres] = useState([]);
-  const [moods, setMoods] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [scanStatus, setScanStatus] = useState(null);
   
   // Player state
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.8);
+  const [volume, setVolume] = useState(0.7);
   
-  // Two-queue system (YouTube Music style)
+  // Queue state
   const [userQueue, setUserQueue] = useState([]);
   const [autoQueue, setAutoQueue] = useState([]);
-  const [currentQueueType, setCurrentQueueType] = useState('user'); // 'user' or 'auto'
   const [currentQueueIndex, setCurrentQueueIndex] = useState(0);
+  const [currentQueueType, setCurrentQueueType] = useState('user');
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState('none');
   const [unlimitedMode, setUnlimitedMode] = useState(true);
   const [playbackSession, setPlaybackSession] = useState(null);
   
-  // Controls
-  const [shuffle, setShuffle] = useState(false);
-  const [repeat, setRepeat] = useState('none');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('');
-  const [selectedMood, setSelectedMood] = useState('');
-  
   // UI state
-  const [scanStatus, setScanStatus] = useState(null);
-  const [newFolderPath, setNewFolderPath] = useState('');
-  const [theme, setTheme] = useState('dark');
+  const [currentView, setCurrentView] = useState('library');
   const [showQueue, setShowQueue] = useState(false);
-  const [stats, setStats] = useState(null);
-  const [showAiPlaylist, setShowAiPlaylist] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiPromptSuggestions, setAiPromptSuggestions] = useState([]);
-  const [isGeneratingPlaylist, setIsGeneratingPlaylist] = useState(false);
+  const [queueViewMode, setQueueViewMode] = useState('queue'); // 'queue' or 'info'
+  const [theme, setTheme] = useState('dark');
 
   const audioRef = useRef(null);
 
