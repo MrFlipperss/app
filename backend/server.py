@@ -619,12 +619,24 @@ async def get_artists():
     
     return artist_data
 
+class Album(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    artist: str
+    track_count: int
+    total_duration: float
+    year: Optional[int] = None
+    genres: List[str] = []
+    artwork_data: Optional[str] = None
+    track_ids: List[str] = []
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 @api_router.get("/albums")
-async def get_albums(artist: Optional[str] = None):
-    """Get albums with enhanced metadata"""
+async def get_albums(artist: Optional[str] = None, limit: int = 100, offset: int = 0):
+    """Get albums with enhanced metadata and pagination"""
     match_stage = {}
     if artist:
-        match_stage["artist"] = artist
+        match_stage["album_artist"] = artist
     
     pipeline = []
     if match_stage:
@@ -641,25 +653,118 @@ async def get_albums(artist: Optional[str] = None):
                 "artwork_data": {"$first": "$artwork_data"},
                 "genres": {"$addToSet": "$ai_genre"},
                 "year": {"$first": "$year"},
-                "total_duration": {"$sum": "$duration"}
+                "total_duration": {"$sum": "$duration"},
+                "track_ids": {"$push": "$id"},
+                "avg_popularity": {"$avg": "$popularity_score"},
+                "play_count": {"$sum": "$play_count"}
             }
         },
         {
             "$project": {
-                "album": "$_id.album",
-                "artist": "$_id.artist",
+                "_id": 0,
+                "id": {"$toString": {"$toObjectId": {"$concat": [{"$toString": "$_id.album"}, {"$toString": "$_id.artist"}]}}},
+                "name": "$_id.album",
+                "artist": "$_id.artist", 
                 "track_count": 1,
                 "artwork_data": 1,
-                "genres": 1,
+                "genres": {"$filter": {"input": "$genres", "cond": {"$ne": ["$$this", None]}}},
                 "year": 1,
                 "total_duration": 1,
-                "_id": 0
+                "track_ids": 1,
+                "avg_popularity": 1,
+                "play_count": 1
             }
-        }
+        },
+        {"$sort": {"name": 1}},
+        {"$skip": offset},
+        {"$limit": limit}
     ])
     
-    albums = await db.tracks.aggregate(pipeline).to_list(1000)
-    return albums
+    albums = await db.tracks.aggregate(pipeline).to_list(limit)
+    
+    # Clean up and format albums
+    formatted_albums = []
+    for album in albums:
+        # Generate a consistent ID for the album
+        album_id = hashlib.md5(f"{album.get('name', 'Unknown')}-{album.get('artist', 'Unknown')}".encode()).hexdigest()
+        
+        formatted_album = {
+            "id": album_id,
+            "name": album.get('name', 'Unknown Album'),
+            "artist": album.get('artist', 'Unknown Artist'),
+            "track_count": album.get('track_count', 0),
+            "total_duration": album.get('total_duration', 0.0),
+            "year": album.get('year'),
+            "genres": album.get('genres', []),
+            "artwork_data": album.get('artwork_data'),
+            "track_ids": album.get('track_ids', []),
+            "avg_popularity": album.get('avg_popularity', 0.0),
+            "play_count": album.get('play_count', 0),
+            "created_at": datetime.utcnow()
+        }
+        formatted_albums.append(formatted_album)
+    
+    return formatted_albums
+
+@api_router.get("/albums/{album_id}")
+async def get_album_details(album_id: str):
+    """Get detailed album information with tracks"""
+    # First, try to find tracks that belong to this album
+    # We'll match based on album name and artist since we generate album_id from these
+    albums = await db.tracks.aggregate([
+        {
+            "$group": {
+                "_id": {
+                    "album": "$album",
+                    "artist": "$album_artist"
+                },
+                "album_id": {"$first": {"$concat": [{"$toString": "$album"}, "-", {"$toString": "$album_artist"}]}},
+                "track_count": {"$sum": 1},
+                "artwork_data": {"$first": "$artwork_data"},
+                "genres": {"$addToSet": "$ai_genre"},
+                "year": {"$first": "$year"},
+                "total_duration": {"$sum": "$duration"},
+                "tracks": {"$push": "$$ROOT"},
+                "avg_popularity": {"$avg": "$popularity_score"},
+                "total_plays": {"$sum": "$play_count"}
+            }
+        }
+    ]).to_list(1000)
+    
+    # Find the album that matches our ID
+    target_album = None
+    for album in albums:
+        generated_id = hashlib.md5(f"{album['_id']['album']}-{album['_id']['artist']}".encode()).hexdigest()
+        if generated_id == album_id:
+            target_album = album
+            break
+    
+    if not target_album:
+        raise HTTPException(status_code=404, detail="Album not found")
+    
+    # Format the response
+    album_details = {
+        "id": album_id,
+        "name": target_album['_id']['album'] or 'Unknown Album',
+        "artist": target_album['_id']['artist'] or 'Unknown Artist',
+        "track_count": target_album['track_count'],
+        "total_duration": target_album['total_duration'],
+        "year": target_album['year'],
+        "genres": [g for g in target_album['genres'] if g],
+        "artwork_data": target_album['artwork_data'],
+        "tracks": [Track(**track) for track in target_album['tracks']],
+        "avg_popularity": target_album.get('avg_popularity', 0.0),
+        "total_plays": target_album.get('total_plays', 0),
+        "created_at": datetime.utcnow()
+    }
+    
+    return album_details
+
+@api_router.get("/albums/{album_id}/tracks")
+async def get_album_tracks(album_id: str):
+    """Get all tracks for a specific album"""
+    album_details = await get_album_details(album_id)
+    return album_details["tracks"]
 
 @api_router.get("/genres")
 async def get_genres():
