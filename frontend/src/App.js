@@ -92,6 +92,7 @@ function App() {
   const [albums, setAlbums] = useState([]);
   const [playlists, setPlaylists] = useState([]);
   const [smartMixes, setSmartMixes] = useState([]);
+  const [aiPlaylists, setAiPlaylists] = useState([]);
   const [folders, setFolders] = useState([]);
   const [genres, setGenres] = useState([]);
   const [moods, setMoods] = useState([]);
