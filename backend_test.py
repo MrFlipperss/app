@@ -372,9 +372,23 @@ class MusicPlayerAPITest(unittest.TestCase):
         """Test smart queue management endpoints"""
         print("\n🔍 Testing smart queue management endpoints...")
         
-        # Skip if we don't have tracks
-        if not hasattr(self, 'test_track_id'):
-            print("⚠️ Skipping smart queue tests as no tracks were found")
+        # Get tracks first to ensure we have track IDs
+        try:
+            response = requests.get(f"{API_URL}/tracks")
+            if response.status_code == 200:
+                tracks = response.json()
+                if tracks:
+                    self.test_track_id = tracks[0]["id"]
+                    self.test_smart_queue["track_ids"] = [t["id"] for t in tracks[:min(3, len(tracks))]]
+                    print(f"Found {len(tracks)} tracks for testing")
+                else:
+                    print("⚠️ No tracks found in the library")
+                    return
+            else:
+                print(f"⚠️ Failed to get tracks: Status code {response.status_code}")
+                return
+        except Exception as e:
+            print(f"⚠️ Error getting tracks: {str(e)}")
             return
         
         # Test creating a smart queue
