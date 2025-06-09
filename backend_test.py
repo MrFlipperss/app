@@ -765,6 +765,9 @@ def run_tests():
     suite.addTest(MusicPlayerAPITest('test_06_smart_mixes'))
     suite.addTest(MusicPlayerAPITest('test_07_analytics'))
     suite.addTest(MusicPlayerAPITest('test_08_playlists'))
+    suite.addTest(MusicPlayerAPITest('test_09_album_endpoints'))
+    suite.addTest(MusicPlayerAPITest('test_10_album_data_integrity'))
+    suite.addTest(MusicPlayerAPITest('test_11_edge_cases'))
     
     # Run the tests
     runner = unittest.TextTestRunner(verbosity=2)
