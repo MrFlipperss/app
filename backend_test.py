@@ -750,6 +750,327 @@ class MusicPlayerAPITest(unittest.TestCase):
                     print("⚠️ Could not get tracks to update playlist")
             except Exception as e:
                 print(f"❌ Failed to update playlist tracks: {str(e)}")
+    
+    def test_09_album_endpoints(self):
+        """Test album endpoints with enhanced metadata"""
+        print("\n🔍 Testing album endpoints with enhanced metadata...")
+        
+        # Wait for any scanning to complete
+        self.wait_for_scan_completion()
+        
+        # Test getting albums with pagination and filtering
+        print("Testing GET /api/albums...")
+        try:
+            response = requests.get(f"{API_URL}/albums")
+            self.assertEqual(response.status_code, 200)
+            albums = response.json()
+            self.assertIsInstance(albums, list)
+            print(f"✅ Successfully retrieved {len(albums)} albums")
+            
+            # Check for enhanced metadata
+            if albums:
+                sample_album = albums[0]
+                print(f"   - Sample album: '{sample_album.get('name', 'Unknown')}' by '{sample_album.get('artist', 'Unknown')}'")
+                print(f"   - Track count: {sample_album.get('track_count', 0)}")
+                print(f"   - Total duration: {sample_album.get('total_duration', 0):.2f} seconds")
+                print(f"   - Year: {sample_album.get('year', 'Not available')}")
+                print(f"   - Genres: {', '.join(sample_album.get('genres', ['None']))}")
+                print(f"   - Has artwork: {'Yes' if sample_album.get('artwork_data') else 'No'}")
+                print(f"   - Play count: {sample_album.get('play_count', 0)}")
+                print(f"   - Average popularity: {sample_album.get('avg_popularity', 0):.2f}")
+                
+                # Save album ID for further testing
+                self.test_album_id = sample_album.get('id')
+                
+                # Verify album ID generation (MD5 hash of album name + artist)
+                expected_id = hashlib.md5(f"{sample_album.get('name', '')}-{sample_album.get('artist', '')}".encode()).hexdigest()
+                if expected_id == sample_album.get('id'):
+                    print("✅ Album ID is correctly generated using MD5 hash")
+                else:
+                    print("❌ Album ID does not match expected MD5 hash")
+            else:
+                print("⚠️ No albums found in the library")
+        except Exception as e:
+            print(f"❌ Failed to get albums: {str(e)}")
+        
+        # Test album pagination
+        print("Testing GET /api/albums with pagination...")
+        try:
+            # Test with limit and offset
+            pagination_response = requests.get(f"{API_URL}/albums", params={"limit": 2, "offset": 0})
+            self.assertEqual(pagination_response.status_code, 200)
+            paginated_albums = pagination_response.json()
+            
+            # Check if pagination works
+            if len(paginated_albums) <= 2:
+                print("✅ Album pagination works correctly (limit=2)")
+            else:
+                print(f"❌ Album pagination returned {len(paginated_albums)} albums instead of 2")
+            
+            # Test with artist filter if we have albums
+            if albums:
+                artist = albums[0].get('artist')
+                artist_response = requests.get(f"{API_URL}/albums", params={"artist": artist})
+                self.assertEqual(artist_response.status_code, 200)
+                artist_albums = artist_response.json()
+                print(f"✅ Artist filter for '{artist}' returned {len(artist_albums)} albums")
+                
+                # Verify all returned albums have the correct artist
+                all_match = all(album.get('artist') == artist for album in artist_albums)
+                if all_match:
+                    print("✅ All returned albums have the correct artist")
+                else:
+                    print("❌ Some returned albums have incorrect artist")
+        except Exception as e:
+            print(f"❌ Failed to test album pagination: {str(e)}")
+        
+        # Test getting a specific album with tracks
+        if hasattr(self, 'test_album_id'):
+            print(f"Testing GET /api/albums/{self.test_album_id}...")
+            try:
+                response = requests.get(f"{API_URL}/albums/{self.test_album_id}")
+                self.assertEqual(response.status_code, 200)
+                album = response.json()
+                self.assertEqual(album["id"], self.test_album_id)
+                print("✅ Successfully retrieved specific album with tracks")
+                
+                # Check for tracks
+                tracks = album.get('tracks', [])
+                print(f"   - Album contains {len(tracks)} tracks")
+                
+                # Verify album metadata
+                print(f"   - Album: '{album.get('name')}' by '{album.get('artist')}'")
+                print(f"   - Year: {album.get('year')}")
+                print(f"   - Genres: {', '.join(album.get('genres', []))}")
+                print(f"   - Total duration: {album.get('total_duration', 0):.2f} seconds")
+                print(f"   - Average popularity: {album.get('avg_popularity', 0):.2f}")
+                print(f"   - Total plays: {album.get('total_plays', 0)}")
+                
+                # Verify album artwork aggregation
+                if album.get('artwork_data'):
+                    print("✅ Album artwork is properly aggregated")
+                else:
+                    print("⚠️ Album does not have artwork")
+                
+                # Verify genre collection
+                if album.get('genres'):
+                    print("✅ Album genres are properly collected")
+                else:
+                    print("⚠️ Album does not have genres")
+            except Exception as e:
+                print(f"❌ Failed to get specific album: {str(e)}")
+        
+        # Test getting album tracks
+        if hasattr(self, 'test_album_id'):
+            print(f"Testing GET /api/albums/{self.test_album_id}/tracks...")
+            try:
+                response = requests.get(f"{API_URL}/albums/{self.test_album_id}/tracks")
+                self.assertEqual(response.status_code, 200)
+                tracks = response.json()
+                self.assertIsInstance(tracks, list)
+                print(f"✅ Successfully retrieved {len(tracks)} tracks for the album")
+                
+                # Check track details
+                if tracks:
+                    sample_track = tracks[0]
+                    print(f"   - Sample track: '{sample_track.get('title', 'Unknown')}'")
+                    print(f"   - Artist: {sample_track.get('artist', 'Unknown')}")
+                    print(f"   - Album: {sample_track.get('album', 'Unknown')}")
+                    print(f"   - Duration: {sample_track.get('duration', 0):.2f} seconds")
+                    print(f"   - File format: {sample_track.get('file_format', 'Unknown')}")
+            except Exception as e:
+                print(f"❌ Failed to get album tracks: {str(e)}")
+        
+        # Test album endpoint with invalid ID
+        print("Testing GET /api/albums with invalid ID...")
+        try:
+            invalid_id = "invalid_album_id_12345"
+            response = requests.get(f"{API_URL}/albums/{invalid_id}")
+            if response.status_code == 404:
+                print("✅ Album endpoint correctly returns 404 for invalid ID")
+            else:
+                print(f"❌ Album endpoint returned {response.status_code} instead of 404 for invalid ID")
+        except Exception as e:
+            print(f"❌ Failed to test album with invalid ID: {str(e)}")
+    
+    def test_10_album_data_integrity(self):
+        """Test album data integrity and aggregation"""
+        print("\n🔍 Testing album data integrity and aggregation...")
+        
+        # Wait for any scanning to complete
+        self.wait_for_scan_completion()
+        
+        # Get all albums
+        try:
+            albums_response = requests.get(f"{API_URL}/albums")
+            if albums_response.status_code != 200:
+                print(f"❌ Failed to get albums: Status code {albums_response.status_code}")
+                return
+            
+            albums = albums_response.json()
+            if not albums:
+                print("⚠️ No albums found in the library")
+                return
+            
+            print(f"Found {len(albums)} albums for testing")
+            
+            # Test album grouping by album name + artist
+            print("Testing album grouping by album name + artist...")
+            album_keys = set()
+            for album in albums:
+                key = f"{album.get('name', '')}-{album.get('artist', '')}"
+                album_keys.add(key)
+            
+            if len(album_keys) == len(albums):
+                print("✅ Albums are properly grouped by album name + artist")
+            else:
+                print(f"❌ Found {len(albums)} albums but only {len(album_keys)} unique album name + artist combinations")
+            
+            # Test album ID generation consistency
+            print("Testing album ID generation consistency...")
+            id_matches = 0
+            for album in albums:
+                expected_id = hashlib.md5(f"{album.get('name', '')}-{album.get('artist', '')}".encode()).hexdigest()
+                if expected_id == album.get('id'):
+                    id_matches += 1
+            
+            if id_matches == len(albums):
+                print(f"✅ All {id_matches} album IDs are generated consistently using MD5 hash")
+            else:
+                print(f"❌ Only {id_matches} out of {len(albums)} album IDs match expected MD5 hash")
+            
+            # Test album metadata aggregation
+            print("Testing album metadata aggregation...")
+            for album in albums[:min(3, len(albums))]:
+                album_id = album.get('id')
+                if not album_id:
+                    continue
+                
+                # Get album details with tracks
+                album_response = requests.get(f"{API_URL}/albums/{album_id}")
+                if album_response.status_code != 200:
+                    continue
+                
+                album_details = album_response.json()
+                tracks = album_details.get('tracks', [])
+                
+                if not tracks:
+                    continue
+                
+                # Verify track count
+                if album_details.get('track_count') == len(tracks):
+                    print(f"✅ Album '{album_details.get('name')}' has correct track count: {len(tracks)}")
+                else:
+                    print(f"❌ Album '{album_details.get('name')}' has incorrect track count: {album_details.get('track_count')} vs {len(tracks)}")
+                
+                # Verify total duration
+                track_durations = [t.get('duration', 0) for t in tracks]
+                expected_duration = sum(track_durations)
+                if abs(album_details.get('total_duration', 0) - expected_duration) < 0.1:  # Allow small floating point difference
+                    print(f"✅ Album '{album_details.get('name')}' has correct total duration: {expected_duration:.2f} seconds")
+                else:
+                    print(f"❌ Album '{album_details.get('name')}' has incorrect total duration: {album_details.get('total_duration', 0):.2f} vs {expected_duration:.2f}")
+                
+                # Verify genres collection
+                track_genres = set()
+                for track in tracks:
+                    if track.get('ai_genre'):
+                        track_genres.add(track.get('ai_genre'))
+                
+                album_genres = set(album_details.get('genres', []))
+                if track_genres.issubset(album_genres):
+                    print(f"✅ Album '{album_details.get('name')}' has correctly collected genres")
+                else:
+                    print(f"❌ Album '{album_details.get('name')}' is missing some track genres")
+                
+                # Verify play count aggregation
+                track_plays = sum(t.get('play_count', 0) for t in tracks)
+                if album_details.get('total_plays', 0) == track_plays:
+                    print(f"✅ Album '{album_details.get('name')}' has correct play count aggregation: {track_plays}")
+                else:
+                    print(f"❌ Album '{album_details.get('name')}' has incorrect play count: {album_details.get('total_plays', 0)} vs {track_plays}")
+                
+                # Verify artwork aggregation
+                if album_details.get('artwork_data'):
+                    print(f"✅ Album '{album_details.get('name')}' has artwork data")
+                else:
+                    # Check if any tracks have artwork
+                    tracks_with_artwork = [t for t in tracks if t.get('artwork_data')]
+                    if tracks_with_artwork:
+                        print(f"❌ Album '{album_details.get('name')}' is missing artwork despite tracks having artwork")
+                    else:
+                        print(f"⚠️ Album '{album_details.get('name')}' has no artwork (no tracks have artwork)")
+        
+        except Exception as e:
+            print(f"❌ Failed to test album data integrity: {str(e)}")
+    
+    def test_11_edge_cases(self):
+        """Test edge cases for album endpoints"""
+        print("\n🔍 Testing edge cases for album endpoints...")
+        
+        # Test album with no tracks
+        print("Testing album with no tracks...")
+        try:
+            # Create a unique album ID that likely doesn't exist
+            non_existent_album_id = hashlib.md5(f"Non-Existent Album-{datetime.now().isoformat()}".encode()).hexdigest()
+            
+            response = requests.get(f"{API_URL}/albums/{non_existent_album_id}")
+            if response.status_code == 404:
+                print("✅ Album endpoint correctly returns 404 for album with no tracks")
+            else:
+                print(f"❌ Album endpoint returned {response.status_code} instead of 404 for album with no tracks")
+        except Exception as e:
+            print(f"❌ Failed to test album with no tracks: {str(e)}")
+        
+        # Test album tracks endpoint with invalid ID
+        print("Testing GET /api/albums/invalid_id/tracks...")
+        try:
+            response = requests.get(f"{API_URL}/albums/invalid_id/tracks")
+            if response.status_code == 404:
+                print("✅ Album tracks endpoint correctly returns 404 for invalid ID")
+            else:
+                print(f"❌ Album tracks endpoint returned {response.status_code} instead of 404 for invalid ID")
+        except Exception as e:
+            print(f"❌ Failed to test album tracks with invalid ID: {str(e)}")
+        
+        # Test album endpoint with extreme pagination values
+        print("Testing GET /api/albums with extreme pagination values...")
+        try:
+            # Test with very large limit
+            large_limit_response = requests.get(f"{API_URL}/albums", params={"limit": 1000})
+            self.assertEqual(large_limit_response.status_code, 200)
+            large_limit_albums = large_limit_response.json()
+            print(f"✅ Album endpoint handles large limit value, returned {len(large_limit_albums)} albums")
+            
+            # Test with very large offset
+            large_offset_response = requests.get(f"{API_URL}/albums", params={"offset": 1000})
+            self.assertEqual(large_offset_response.status_code, 200)
+            large_offset_albums = large_offset_response.json()
+            print(f"✅ Album endpoint handles large offset value, returned {len(large_offset_albums)} albums")
+            
+            # Test with negative values (should be handled gracefully)
+            negative_response = requests.get(f"{API_URL}/albums", params={"limit": -10, "offset": -5})
+            if negative_response.status_code == 200:
+                print("✅ Album endpoint handles negative pagination values gracefully")
+            else:
+                print(f"❌ Album endpoint returned {negative_response.status_code} for negative pagination values")
+        except Exception as e:
+            print(f"❌ Failed to test album pagination edge cases: {str(e)}")
+        
+        # Test album endpoint with non-existent artist filter
+        print("Testing GET /api/albums with non-existent artist...")
+        try:
+            non_existent_artist = f"Non-Existent Artist {datetime.now().isoformat()}"
+            response = requests.get(f"{API_URL}/albums", params={"artist": non_existent_artist})
+            self.assertEqual(response.status_code, 200)
+            artist_albums = response.json()
+            
+            if len(artist_albums) == 0:
+                print("✅ Album endpoint correctly returns empty list for non-existent artist")
+            else:
+                print(f"❌ Album endpoint returned {len(artist_albums)} albums for non-existent artist")
+        except Exception as e:
+            print(f"❌ Failed to test album with non-existent artist: {str(e)}")
 
 def run_tests():
     """Run the test suite"""
