@@ -617,6 +617,14 @@ function App() {
             </button>
             
             <button 
+              className={`nav-item ${currentView === 'ai-playlists' ? 'active' : ''}`}
+              onClick={() => setCurrentView('ai-playlists')}
+            >
+              <SmartIcon />
+              AI Playlists
+            </button>
+            
+            <button 
               className={`nav-item ${currentView === 'folders' ? 'active' : ''}`}
               onClick={() => setCurrentView('folders')}
             >
