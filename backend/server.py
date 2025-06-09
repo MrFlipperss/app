@@ -39,6 +39,7 @@ db = client[os.environ['DB_NAME']]
 # Initialize AI components
 audio_analyzer = AudioAnalyzer()
 recommendation_engine = RecommendationEngine(audio_analyzer)
+playlist_ai = PlaylistAI()
 
 # Create the main app without a prefix
 app = FastAPI()
