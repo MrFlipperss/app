@@ -192,6 +192,9 @@ class MusicPlayerAPITest(unittest.TestCase):
         """Test music library endpoints"""
         print("\n🔍 Testing music library endpoints...")
         
+        # Wait a bit for scanning to complete if it's in progress
+        self.wait_for_scan_completion()
+        
         # Test getting tracks with AI metadata
         print("Testing GET /api/tracks...")
         try:
@@ -223,6 +226,29 @@ class MusicPlayerAPITest(unittest.TestCase):
                 print("⚠️ No tracks found in the library")
         except Exception as e:
             print(f"❌ Failed to get tracks: {str(e)}")
+        
+        # Test track filtering
+        print("Testing GET /api/tracks with filtering...")
+        try:
+            # Test search parameter
+            search_response = requests.get(f"{API_URL}/tracks", params={"search": "test"})
+            self.assertEqual(search_response.status_code, 200)
+            search_tracks = search_response.json()
+            print(f"✅ Search filter returned {len(search_tracks)} tracks")
+            
+            # Test genre filter if we have genres
+            genres_response = requests.get(f"{API_URL}/genres")
+            if genres_response.status_code == 200:
+                genres_data = genres_response.json()
+                ai_genres = genres_data.get('ai_genres', [])
+                if ai_genres:
+                    test_genre = ai_genres[0]['genre']
+                    genre_response = requests.get(f"{API_URL}/tracks", params={"genre": test_genre})
+                    self.assertEqual(genre_response.status_code, 200)
+                    genre_tracks = genre_response.json()
+                    print(f"✅ Genre filter for '{test_genre}' returned {len(genre_tracks)} tracks")
+        except Exception as e:
+            print(f"❌ Failed to test track filtering: {str(e)}")
         
         # Test getting genres (new endpoint)
         print("Testing GET /api/genres...")
@@ -306,6 +332,41 @@ class MusicPlayerAPITest(unittest.TestCase):
                 print("✅ Successfully recorded track skip")
             except Exception as e:
                 print(f"❌ Failed to record track skip: {str(e)}")
+            
+            # Test getting a specific track
+            print(f"Testing GET /api/tracks/{self.test_track_id}...")
+            try:
+                response = requests.get(f"{API_URL}/tracks/{self.test_track_id}")
+                self.assertEqual(response.status_code, 200)
+                track = response.json()
+                self.assertEqual(track["id"], self.test_track_id)
+                print("✅ Successfully retrieved specific track")
+                
+                # Check if play count was incremented after streaming
+                if track.get('play_count', 0) > 0:
+                    print("✅ Play count was incremented after streaming")
+                else:
+                    print("⚠️ Play count was not incremented after streaming")
+            except Exception as e:
+                print(f"❌ Failed to get specific track: {str(e)}")
+    
+    def wait_for_scan_completion(self, timeout=15):
+        """Wait for any ongoing scan to complete"""
+        print("Checking if scan is in progress...")
+        try:
+            for _ in range(timeout):
+                response = requests.get(f"{API_URL}/scan-status")
+                if response.status_code == 200:
+                    status = response.json()
+                    if status["is_scanning"] or status["ai_processing"]:
+                        print(f"Scan in progress: {status['status']}. Waiting...")
+                        time.sleep(1)
+                    else:
+                        print("No scan in progress.")
+                        return
+            print(f"Timed out after {timeout} seconds waiting for scan to complete.")
+        except Exception as e:
+            print(f"Error checking scan status: {e}")
     
     def test_04_smart_queue_management(self):
         """Test smart queue management endpoints"""
