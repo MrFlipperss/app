@@ -12,7 +12,7 @@ import wave
 import numpy as np
 
 # Use the public endpoint from frontend/.env
-BACKEND_URL = "https://c3ce70ae-c000-43ca-af0f-88f273260465.preview.emergentagent.com"
+BACKEND_URL = "https://8daeb19f-d1b8-40d8-938d-05bb4d9f3070.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 class MusicPlayerAPITest(unittest.TestCase):
