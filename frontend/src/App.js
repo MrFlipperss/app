@@ -165,17 +165,24 @@ function App() {
 
   const loadLibraryData = async () => {
     try {
-      const [tracksRes, artistsRes, albumsRes, playlistsRes] = await Promise.all([
-        axios.get(`${API}/tracks?limit=1000`),
-        axios.get(`${API}/artists`),
-        axios.get(`${API}/albums`),
-        axios.get(`${API}/playlists`)
-      ]);
+      // Load tracks
+      const tracksResponse = await axios.get(`${API}/tracks?limit=1000`);
+      setTracks(tracksResponse.data);
       
-      setTracks(tracksRes.data);
-      setArtists(artistsRes.data);
-      setAlbums(albumsRes.data);
-      setPlaylists(playlistsRes.data);
+      // Load artists
+      const artistsResponse = await axios.get(`${API}/artists`);
+      setArtists(artistsResponse.data);
+      
+      // Load albums
+      const albumsResponse = await axios.get(`${API}/albums?limit=100`);
+      setAlbums(albumsResponse.data);
+      
+      // Load genres and moods
+      const genresResponse = await axios.get(`${API}/genres`);
+      setGenres(genresResponse.data.ai_genres);
+      
+      const moodsResponse = await axios.get(`${API}/moods`);
+      setMoods(moodsResponse.data);
     } catch (error) {
       console.error('Error loading library data:', error);
     }
