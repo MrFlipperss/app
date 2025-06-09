@@ -398,6 +398,16 @@ class MusicPlayerAPITest(unittest.TestCase):
             queues = response.json()
             self.assertIsInstance(queues, list)
             print(f"✅ Successfully retrieved {len(queues)} smart queues")
+            
+            # Check queue types
+            queue_types = {}
+            for q in queues:
+                queue_type = q.get('queue_type', 'unknown')
+                queue_types[queue_type] = queue_types.get(queue_type, 0) + 1
+            
+            print("   - Queue types distribution:")
+            for queue_type, count in queue_types.items():
+                print(f"     * {queue_type}: {count} queues")
         except Exception as e:
             print(f"❌ Failed to get smart queues: {str(e)}")
         
@@ -442,6 +452,15 @@ class MusicPlayerAPITest(unittest.TestCase):
                 )
                 self.assertEqual(response.status_code, 200)
                 print("✅ Successfully updated smart queue settings")
+                
+                # Verify the update
+                response = requests.get(f"{API_URL}/smart-queues/{self.test_smart_queue_id}")
+                if response.status_code == 200:
+                    updated_queue = response.json()
+                    if updated_queue.get("shuffle") == True and updated_queue.get("repeat") == "queue":
+                        print("✅ Queue settings were correctly updated")
+                    else:
+                        print("⚠️ Queue settings may not have been correctly updated")
             except Exception as e:
                 print(f"❌ Failed to update smart queue settings: {str(e)}")
     
