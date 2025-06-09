@@ -206,6 +206,24 @@ function App() {
     }
   };
 
+  const loadAiPlaylists = async () => {
+    try {
+      const response = await axios.get(`${API}/ai-playlists`);
+      setAiPlaylists(response.data);
+    } catch (error) {
+      console.error('Error loading AI playlists:', error);
+    }
+  };
+
+  const loadAiPromptSuggestions = async () => {
+    try {
+      const response = await axios.get(`${API}/ai-playlists/suggestions/prompts`);
+      setAiPromptSuggestions(response.data.suggestions || []);
+    } catch (error) {
+      console.error('Error loading AI prompt suggestions:', error);
+    }
+  };
+
   const loadFolders = async () => {
     try {
       const response = await axios.get(`${API}/folders`);
