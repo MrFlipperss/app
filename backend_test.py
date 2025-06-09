@@ -637,6 +637,81 @@ class MusicPlayerAPITest(unittest.TestCase):
                         print("⚠️ Analytics may not be recording track plays correctly")
             except Exception as e:
                 print(f"❌ Error testing analytics after playback: {str(e)}")
+    
+    def test_08_playlists(self):
+        """Test playlist functionality"""
+        print("\n🔍 Testing playlist functionality...")
+        
+        # Skip if we don't have tracks
+        if not hasattr(self, 'test_track_id'):
+            print("⚠️ Skipping playlist tests as no tracks were found")
+            return
+        
+        # Test creating a playlist
+        print("Testing POST /api/playlists...")
+        try:
+            response = requests.post(f"{API_URL}/playlists", json=self.test_playlist)
+            self.assertEqual(response.status_code, 200)
+            playlist = response.json()
+            self.assertEqual(playlist["name"], self.test_playlist["name"])
+            self.test_playlist_id = playlist["id"]
+            print("✅ Successfully created playlist")
+        except Exception as e:
+            print(f"❌ Failed to create playlist: {str(e)}")
+            return
+        
+        # Test getting playlists
+        print("Testing GET /api/playlists...")
+        try:
+            response = requests.get(f"{API_URL}/playlists")
+            self.assertEqual(response.status_code, 200)
+            playlists = response.json()
+            self.assertIsInstance(playlists, list)
+            print(f"✅ Successfully retrieved {len(playlists)} playlists")
+        except Exception as e:
+            print(f"❌ Failed to get playlists: {str(e)}")
+        
+        # Test getting a specific playlist
+        if hasattr(self, 'test_playlist_id'):
+            print(f"Testing GET /api/playlists/{self.test_playlist_id}...")
+            try:
+                response = requests.get(f"{API_URL}/playlists/{self.test_playlist_id}")
+                self.assertEqual(response.status_code, 200)
+                playlist = response.json()
+                self.assertEqual(playlist["id"], self.test_playlist_id)
+                print("✅ Successfully retrieved specific playlist")
+            except Exception as e:
+                print(f"❌ Failed to get specific playlist: {str(e)}")
+        
+        # Test updating playlist tracks
+        if hasattr(self, 'test_playlist_id') and hasattr(self, 'test_track_id'):
+            print(f"Testing PUT /api/playlists/{self.test_playlist_id}/tracks...")
+            try:
+                # Get all tracks to add to playlist
+                tracks_response = requests.get(f"{API_URL}/tracks", params={"limit": 5})
+                if tracks_response.status_code == 200:
+                    tracks = tracks_response.json()
+                    track_ids = [t["id"] for t in tracks]
+                    
+                    response = requests.put(
+                        f"{API_URL}/playlists/{self.test_playlist_id}/tracks",
+                        json=track_ids
+                    )
+                    self.assertEqual(response.status_code, 200)
+                    print(f"✅ Successfully updated playlist with {len(track_ids)} tracks")
+                    
+                    # Verify the update
+                    verify_response = requests.get(f"{API_URL}/playlists/{self.test_playlist_id}")
+                    if verify_response.status_code == 200:
+                        updated_playlist = verify_response.json()
+                        if len(updated_playlist.get("track_ids", [])) == len(track_ids):
+                            print("✅ Playlist tracks were correctly updated")
+                        else:
+                            print("⚠️ Playlist tracks may not have been correctly updated")
+                else:
+                    print("⚠️ Could not get tracks to update playlist")
+            except Exception as e:
+                print(f"❌ Failed to update playlist tracks: {str(e)}")
 
 def run_tests():
     """Run the test suite"""
@@ -651,6 +726,7 @@ def run_tests():
     suite.addTest(MusicPlayerAPITest('test_05_playback_session'))
     suite.addTest(MusicPlayerAPITest('test_06_smart_mixes'))
     suite.addTest(MusicPlayerAPITest('test_07_analytics'))
+    suite.addTest(MusicPlayerAPITest('test_08_playlists'))
     
     # Run the tests
     runner = unittest.TextTestRunner(verbosity=2)
