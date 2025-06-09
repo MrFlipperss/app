@@ -1125,6 +1125,69 @@ function App() {
 
       {/* Hidden audio element */}
       <audio ref={audioRef} />
+
+      {/* AI Playlist Generation Modal */}
+      {showAiPlaylist && (
+        <div className="modal-overlay" onClick={() => setShowAiPlaylist(false)}>
+          <div className="ai-playlist-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>✨ Generate AI Playlist</h3>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowAiPlaylist(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-content">
+              <p>Describe the kind of playlist you want in natural language:</p>
+              
+              <textarea
+                className="ai-prompt-input"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="e.g., 'Create a high-energy workout playlist', 'Relaxing jazz for studying', '80s rock hits for driving'"
+                rows={3}
+                disabled={isGeneratingPlaylist}
+              />
+              
+              <div className="prompt-suggestions">
+                <p>Or try one of these suggestions:</p>
+                <div className="suggestions-grid">
+                  {aiPromptSuggestions.slice(0, 6).map((suggestion, index) => (
+                    <button
+                      key={index}
+                      className="suggestion-btn"
+                      onClick={() => setAiPrompt(suggestion)}
+                      disabled={isGeneratingPlaylist}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="modal-actions">
+                <button 
+                  className="cancel-btn"
+                  onClick={() => setShowAiPlaylist(false)}
+                  disabled={isGeneratingPlaylist}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="generate-btn"
+                  onClick={generateAiPlaylist}
+                  disabled={!aiPrompt.trim() || isGeneratingPlaylist}
+                >
+                  {isGeneratingPlaylist ? '🎵 Generating...' : '✨ Generate Playlist'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
