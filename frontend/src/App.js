@@ -86,13 +86,17 @@ const InfiniteIcon = () => (
 
 function App() {
   // Enhanced state management
-  const [playlists, setPlaylists] = useState([]);
+  const [currentView, setCurrentView] = useState('library');
+  const [tracks, setTracks] = useState([]);
+  const [artists, setArtists] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [playlists, setPlaylists] = useState([]);
   const [smartMixes, setSmartMixes] = useState([]);
   const [aiPlaylists, setAiPlaylists] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [scanStatus, setScanStatus] = useState(null);
+  const [folders, setFolders] = useState([]);
+  const [genres, setGenres] = useState([]);
+  const [moods, setMoods] = useState([]);
   
   // Player state
   const [currentTrack, setCurrentTrack] = useState(null);
