@@ -662,7 +662,7 @@ async def get_albums(artist: Optional[str] = None, limit: int = 100, offset: int
         {
             "$project": {
                 "_id": 0,
-                "id": {"$toString": {"$toObjectId": {"$concat": [{"$toString": "$_id.album"}, {"$toString": "$_id.artist"}]}}},
+                "id": {"$toString": {"$md5": {"$concat": [{"$toString": "$_id.album"}, {"$toString": "$_id.artist"}]}}},
                 "name": "$_id.album",
                 "artist": "$_id.artist", 
                 "track_count": 1,
