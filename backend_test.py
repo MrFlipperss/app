@@ -545,19 +545,34 @@ class MusicPlayerAPITest(unittest.TestCase):
         except Exception as e:
             print(f"❌ Failed to get smart mixes: {str(e)}")
         
-        # Test generating a new smart mix
-        print("Testing POST /api/smart-mixes/generate...")
-        try:
-            response = requests.post(
-                f"{API_URL}/smart-mixes/generate",
-                params={"mix_type": "discovery"},
-                json={"parameters": {"max_tracks": 20}}
-            )
-            self.assertEqual(response.status_code, 200)
-            mix = response.json()
-            print(f"✅ Successfully generated '{mix.get('name')}' smart mix with {len(mix.get('track_ids', []))} tracks")
-        except Exception as e:
-            print(f"❌ Failed to generate smart mix: {str(e)}")
+        # Test generating different types of smart mixes
+        mix_types = ["discovery", "popular", "genre"]
+        for mix_type in mix_types:
+            print(f"Testing POST /api/smart-mixes/generate with type '{mix_type}'...")
+            try:
+                parameters = {"max_tracks": 20}
+                if mix_type == "genre" and hasattr(self, 'test_track_id'):
+                    # Get a genre from a track if available
+                    track_response = requests.get(f"{API_URL}/tracks/{self.test_track_id}")
+                    if track_response.status_code == 200:
+                        track = track_response.json()
+                        if track.get('ai_genre'):
+                            parameters["genre"] = track.get('ai_genre')
+                
+                response = requests.post(
+                    f"{API_URL}/smart-mixes/generate",
+                    params={"mix_type": mix_type},
+                    json={"parameters": parameters}
+                )
+                self.assertEqual(response.status_code, 200)
+                mix = response.json()
+                print(f"✅ Successfully generated '{mix.get('name')}' smart mix with {len(mix.get('track_ids', []))} tracks")
+                
+                # Save the mix ID for the first successful mix generation
+                if not hasattr(self, 'test_mix_id'):
+                    self.test_mix_id = mix["id"]
+            except Exception as e:
+                print(f"❌ Failed to generate {mix_type} smart mix: {str(e)}")
         
         # Test refreshing a smart mix
         if hasattr(self, 'test_mix_id'):
