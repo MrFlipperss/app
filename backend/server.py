@@ -717,7 +717,7 @@ async def get_album_details(album_id: str):
                     "album": "$album",
                     "artist": "$album_artist"
                 },
-                "album_id": {"$first": {"$md5": {"$concat": [{"$toString": "$album"}, "-", {"$toString": "$album_artist"}]}}},
+                "album_id": {"$first": {"$concat": [{"$toString": "$album"}, "-", {"$toString": "$album_artist"}]}},
                 "track_count": {"$sum": 1},
                 "artwork_data": {"$first": "$artwork_data"},
                 "genres": {"$addToSet": "$ai_genre"},
