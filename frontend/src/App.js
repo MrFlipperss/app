@@ -369,7 +369,7 @@ function App() {
                         {track.artwork_data ? (
                           <img 
                             src={`data:image/jpeg;base64,${track.artwork_data}`}
-                            alt={track.album}
+                            alt={track.album || 'Album artwork'}
                           />
                         ) : (
                           <div className="no-artwork">
@@ -382,18 +382,41 @@ function App() {
                       </div>
                       
                       <div className="track-info">
-                        <h4 className="track-title">{track.title}</h4>
-                        <p className="track-artist">{track.artist}</p>
-                        <p className="track-album">{track.album}</p>
+                        <h4 className="track-title">{track.title || track.filename || 'Unknown Title'}</h4>
+                        <p className="track-artist">{track.artist || 'Unknown Artist'}</p>
+                        <p className="track-album">{track.album || 'Unknown Album'}</p>
                         <div className="track-meta">
                           <span className="format">{track.file_format}</span>
-                          {track.bitrate && <span>{track.bitrate} kbps</span>}
+                          {track.bitrate && track.bitrate > 0 && <span>{track.bitrate} kbps</span>}
+                          {track.sample_rate && track.sample_rate > 0 && <span>{Math.round(track.sample_rate/1000)}kHz</span>}
                           <span>{formatTime(track.duration)}</span>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+                
+                {filteredTracks.length === 0 && tracks.length > 0 && searchQuery && (
+                  <div className="no-results">
+                    <p>No tracks found matching "{searchQuery}"</p>
+                  </div>
+                )}
+                
+                {tracks.length === 0 && !scanStatus?.is_scanning && (
+                  <div className="empty-library">
+                    <div className="empty-icon">
+                      <MusicIcon />
+                    </div>
+                    <h3>No music found</h3>
+                    <p>Add a music folder to get started!</p>
+                    <button 
+                      className="add-folder-btn"
+                      onClick={() => setCurrentView('folders')}
+                    >
+                      Add Music Folder
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
