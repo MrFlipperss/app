@@ -141,6 +141,21 @@ class PlaylistCreate(BaseModel):
     description: Optional[str] = None
     track_ids: List[str] = []
 
+class AIPlaylistRequest(BaseModel):
+    prompt: str
+    max_tracks: int = 25
+    duration_minutes: int = 60
+
+class AIPlaylistResponse(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str
+    prompt: str
+    track_ids: List[str]
+    track_count: int
+    estimated_duration: float
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class ScanStatus(BaseModel):
     is_scanning: bool = False
     current_folder: Optional[str] = None
