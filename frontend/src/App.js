@@ -125,6 +125,10 @@ function App() {
   const [theme, setTheme] = useState('dark');
   const [showQueue, setShowQueue] = useState(false);
   const [stats, setStats] = useState(null);
+  const [showAiPlaylist, setShowAiPlaylist] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiPromptSuggestions, setAiPromptSuggestions] = useState([]);
+  const [isGeneratingPlaylist, setIsGeneratingPlaylist] = useState(false);
 
   const audioRef = useRef(null);
 
