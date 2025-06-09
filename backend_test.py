@@ -3,7 +3,13 @@ import unittest
 import os
 import sys
 import json
+import time
+import base64
 from datetime import datetime
+from pathlib import Path
+import io
+import wave
+import numpy as np
 
 # Use the public endpoint from frontend/.env
 BACKEND_URL = "https://c3ce70ae-c000-43ca-af0f-88f273260465.preview.emergentagent.com"
@@ -17,6 +23,9 @@ class MusicPlayerAPITest(unittest.TestCase):
         self.test_folder_path = "/tmp/test_music_folder"
         # Create test folder if it doesn't exist
         os.makedirs(self.test_folder_path, exist_ok=True)
+        
+        # Create test audio files
+        self.create_test_audio_files()
         
         # Test data
         self.test_folder = {
@@ -39,6 +48,49 @@ class MusicPlayerAPITest(unittest.TestCase):
         
         # Playback session
         self.playback_session = None
+    
+    def create_test_audio_files(self):
+        """Create simple test audio files for testing"""
+        try:
+            # Create a simple WAV file for testing
+            for i, genre in enumerate(['Rock', 'Pop', 'Jazz']):
+                file_path = os.path.join(self.test_folder_path, f"test_track_{i+1}_{genre}.wav")
+                
+                # Skip if file already exists
+                if os.path.exists(file_path):
+                    continue
+                
+                # Create a simple WAV file with 1 second of audio
+                with wave.open(file_path, 'w') as wav_file:
+                    # Set parameters
+                    wav_file.setnchannels(1)  # Mono
+                    wav_file.setsampwidth(2)  # 2 bytes per sample
+                    wav_file.setframerate(44100)  # 44.1 kHz
+                    
+                    # Generate 1 second of audio (sine wave)
+                    frequency = 440.0  # A4 note
+                    duration = 1.0  # seconds
+                    samples = int(44100 * duration)
+                    
+                    # Create sine wave with different frequencies for different genres
+                    if genre == 'Rock':
+                        frequency = 440.0  # A4
+                    elif genre == 'Pop':
+                        frequency = 523.25  # C5
+                    else:  # Jazz
+                        frequency = 349.23  # F4
+                    
+                    t = np.linspace(0, duration, samples, False)
+                    tone = np.sin(2 * np.pi * frequency * t) * 32767
+                    
+                    # Convert to bytes
+                    audio_data = tone.astype(np.int16).tobytes()
+                    wav_file.writeframes(audio_data)
+                
+                print(f"Created test audio file: {file_path}")
+        except Exception as e:
+            print(f"Error creating test audio files: {e}")
+            # Continue with testing even if file creation fails
     
     def test_01_api_connectivity(self):
         """Test if the API is accessible"""
