@@ -377,6 +377,11 @@ body {
   background-color: #f3f4f6;
 }
 
+.scan-status.ai-processing {
+  background: linear-gradient(135deg, #1db954, #1ed760);
+  color: #fff;
+}
+
 .scan-progress .progress-bar {
   width: 100%;
   height: 4px;
@@ -396,6 +401,16 @@ body {
   transition: width 0.3s ease;
 }
 
+.scan-progress .progress-fill.smart {
+  background: linear-gradient(90deg, #1db954, #1ed760, #00d4aa);
+  animation: smart-progress 2s ease-in-out infinite alternate;
+}
+
+@keyframes smart-progress {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
 .scan-progress p {
   font-size: 14px;
   color: #b3b3b3;
@@ -403,6 +418,10 @@ body {
 
 .app.light .scan-progress p {
   color: #6b7280;
+}
+
+.ai-processing .scan-progress p {
+  color: #fff;
 }
 
 /* Tracks Grid */
