@@ -137,6 +137,8 @@ function App() {
     loadLibraryData();
     loadFolders();
     loadSmartData();
+    loadAiPlaylists();
+    loadAiPromptSuggestions();
     checkScanStatus();
     createPlaybackSession();
     loadStats();
