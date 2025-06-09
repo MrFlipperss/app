@@ -656,9 +656,23 @@ class MusicPlayerAPITest(unittest.TestCase):
         """Test playlist functionality"""
         print("\n🔍 Testing playlist functionality...")
         
-        # Skip if we don't have tracks
-        if not hasattr(self, 'test_track_id'):
-            print("⚠️ Skipping playlist tests as no tracks were found")
+        # Get tracks first to ensure we have track IDs
+        try:
+            response = requests.get(f"{API_URL}/tracks")
+            if response.status_code == 200:
+                tracks = response.json()
+                if tracks:
+                    self.test_track_id = tracks[0]["id"]
+                    self.test_playlist["track_ids"] = [tracks[0]["id"]]
+                    print(f"Found {len(tracks)} tracks for testing")
+                else:
+                    print("⚠️ No tracks found in the library")
+                    return
+            else:
+                print(f"⚠️ Failed to get tracks: Status code {response.status_code}")
+                return
+        except Exception as e:
+            print(f"⚠️ Error getting tracks: {str(e)}")
             return
         
         # Test creating a playlist
