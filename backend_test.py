@@ -10,7 +10,7 @@ BACKEND_URL = "https://2b76f461-ed16-4886-8d37-1b96497d4f13.preview.emergentagen
 API_URL = f"{BACKEND_URL}/api"
 
 class MusicPlayerAPITest(unittest.TestCase):
-    """Test suite for the Music Player API"""
+    """Test suite for the Music Player API with enhanced features"""
     
     def setUp(self):
         """Setup for each test"""
@@ -30,10 +30,15 @@ class MusicPlayerAPITest(unittest.TestCase):
             "track_ids": []
         }
         
-        self.test_queue = {
-            "name": f"Test Queue {datetime.now().strftime('%Y%m%d%H%M%S')}",
+        # Smart queue data
+        self.test_smart_queue = {
+            "name": f"Test Smart Queue {datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "queue_type": "user",
             "track_ids": []
         }
+        
+        # Playback session
+        self.playback_session = None
     
     def test_01_api_connectivity(self):
         """Test if the API is accessible"""
@@ -76,14 +81,18 @@ class MusicPlayerAPITest(unittest.TestCase):
         except Exception as e:
             print(f"❌ Failed to get folders: {str(e)}")
         
-        # Test scan status
+        # Test scan status with AI processing indicator
         print("Testing GET /api/scan-status...")
         try:
             response = requests.get(f"{API_URL}/scan-status")
             self.assertEqual(response.status_code, 200)
             status = response.json()
             self.assertIn("is_scanning", status)
-            print(f"✅ Successfully retrieved scan status: {'Scanning' if status['is_scanning'] else 'Not scanning'}")
+            self.assertIn("ai_processing", status)
+            print(f"✅ Successfully retrieved scan status:")
+            print(f"   - Scanning: {'Yes' if status['is_scanning'] else 'No'}")
+            print(f"   - AI Processing: {'Yes' if status['ai_processing'] else 'No'}")
+            print(f"   - AI Processed: {status.get('ai_processed', 0)} files")
         except Exception as e:
             print(f"❌ Failed to get scan status: {str(e)}")
     
@@ -91,7 +100,7 @@ class MusicPlayerAPITest(unittest.TestCase):
         """Test music library endpoints"""
         print("\n🔍 Testing music library endpoints...")
         
-        # Test getting tracks
+        # Test getting tracks with AI metadata
         print("Testing GET /api/tracks...")
         try:
             response = requests.get(f"{API_URL}/tracks")
@@ -104,13 +113,56 @@ class MusicPlayerAPITest(unittest.TestCase):
             if tracks:
                 self.test_track_id = tracks[0]["id"]
                 self.test_playlist["track_ids"] = [tracks[0]["id"]]
-                self.test_queue["track_ids"] = [t["id"] for t in tracks[:min(3, len(tracks))]]
+                self.test_smart_queue["track_ids"] = [t["id"] for t in tracks[:min(3, len(tracks))]]
+                
+                # Check for AI-generated metadata
+                ai_metadata_count = sum(1 for t in tracks if t.get('ai_genre') or t.get('mood') or t.get('energy'))
+                print(f"   - Tracks with AI metadata: {ai_metadata_count}/{len(tracks)}")
+                
+                # Print sample AI metadata if available
+                if ai_metadata_count > 0:
+                    sample_track = next((t for t in tracks if t.get('ai_genre') or t.get('mood')), None)
+                    if sample_track:
+                        print(f"   - Sample AI metadata for '{sample_track.get('title', 'Unknown')}':")
+                        print(f"     * AI Genre: {sample_track.get('ai_genre', 'Not detected')}")
+                        print(f"     * Mood: {sample_track.get('mood', 'Not detected')}")
+                        print(f"     * Energy: {sample_track.get('energy', 'Not detected')}")
             else:
                 print("⚠️ No tracks found in the library")
         except Exception as e:
             print(f"❌ Failed to get tracks: {str(e)}")
         
-        # Test getting artists
+        # Test getting genres (new endpoint)
+        print("Testing GET /api/genres...")
+        try:
+            response = requests.get(f"{API_URL}/genres")
+            self.assertEqual(response.status_code, 200)
+            genres_data = response.json()
+            self.assertIsInstance(genres_data, dict)
+            ai_genres = genres_data.get('ai_genres', [])
+            metadata_genres = genres_data.get('metadata_genres', [])
+            print(f"✅ Successfully retrieved genres:")
+            print(f"   - AI-detected genres: {len(ai_genres)}")
+            print(f"   - Metadata genres: {len(metadata_genres)}")
+        except Exception as e:
+            print(f"❌ Failed to get genres: {str(e)}")
+        
+        # Test getting moods (new endpoint)
+        print("Testing GET /api/moods...")
+        try:
+            response = requests.get(f"{API_URL}/moods")
+            self.assertEqual(response.status_code, 200)
+            moods = response.json()
+            self.assertIsInstance(moods, list)
+            print(f"✅ Successfully retrieved {len(moods)} moods")
+            if moods:
+                print(f"   - Available moods: {', '.join([m.get('mood', '') for m in moods[:5]])}")
+                if len(moods) > 5:
+                    print(f"   - (and {len(moods) - 5} more...)")
+        except Exception as e:
+            print(f"❌ Failed to get moods: {str(e)}")
+        
+        # Test getting artists with AI genre info
         print("Testing GET /api/artists...")
         try:
             response = requests.get(f"{API_URL}/artists")
@@ -118,10 +170,14 @@ class MusicPlayerAPITest(unittest.TestCase):
             artists = response.json()
             self.assertIsInstance(artists, list)
             print(f"✅ Successfully retrieved {len(artists)} artists")
+            
+            # Check for AI genre info
+            artists_with_genres = sum(1 for a in artists if a.get('genres'))
+            print(f"   - Artists with genre info: {artists_with_genres}/{len(artists)}")
         except Exception as e:
             print(f"❌ Failed to get artists: {str(e)}")
         
-        # Test getting albums
+        # Test getting albums with enhanced metadata
         print("Testing GET /api/albums...")
         try:
             response = requests.get(f"{API_URL}/albums")
@@ -129,6 +185,10 @@ class MusicPlayerAPITest(unittest.TestCase):
             albums = response.json()
             self.assertIsInstance(albums, list)
             print(f"✅ Successfully retrieved {len(albums)} albums")
+            
+            # Check for enhanced metadata
+            albums_with_genres = sum(1 for a in albums if a.get('genres'))
+            print(f"   - Albums with genre info: {albums_with_genres}/{len(albums)}")
         except Exception as e:
             print(f"❌ Failed to get albums: {str(e)}")
         
@@ -145,138 +205,239 @@ class MusicPlayerAPITest(unittest.TestCase):
                     print(f"❌ Failed to stream track: Status code {response.status_code}")
             except Exception as e:
                 print(f"❌ Failed to stream track: {str(e)}")
+            
+            # Test track skip analytics
+            print(f"Testing POST /api/tracks/{self.test_track_id}/skip...")
+            try:
+                response = requests.post(f"{API_URL}/tracks/{self.test_track_id}/skip")
+                self.assertEqual(response.status_code, 200)
+                print("✅ Successfully recorded track skip")
+            except Exception as e:
+                print(f"❌ Failed to record track skip: {str(e)}")
     
-    def test_04_playlist_management(self):
-        """Test playlist management endpoints"""
-        print("\n🔍 Testing playlist management endpoints...")
+    def test_04_smart_queue_management(self):
+        """Test smart queue management endpoints"""
+        print("\n🔍 Testing smart queue management endpoints...")
         
         # Skip if we don't have tracks
         if not hasattr(self, 'test_track_id'):
-            print("⚠️ Skipping playlist tests as no tracks were found")
+            print("⚠️ Skipping smart queue tests as no tracks were found")
             return
         
-        # Test creating a playlist
-        print("Testing POST /api/playlists...")
+        # Test creating a smart queue
+        print("Testing POST /api/smart-queues...")
         try:
-            response = requests.post(f"{API_URL}/playlists", json=self.test_playlist)
-            self.assertEqual(response.status_code, 200)
-            playlist = response.json()
-            self.assertEqual(playlist["name"], self.test_playlist["name"])
-            self.test_playlist_id = playlist["id"]
-            print("✅ Successfully created playlist")
-        except Exception as e:
-            print(f"❌ Failed to create playlist: {str(e)}")
-            return
-        
-        # Test getting playlists
-        print("Testing GET /api/playlists...")
-        try:
-            response = requests.get(f"{API_URL}/playlists")
-            self.assertEqual(response.status_code, 200)
-            playlists = response.json()
-            self.assertIsInstance(playlists, list)
-            print(f"✅ Successfully retrieved {len(playlists)} playlists")
-        except Exception as e:
-            print(f"❌ Failed to get playlists: {str(e)}")
-        
-        # Test getting a specific playlist
-        if hasattr(self, 'test_playlist_id'):
-            print(f"Testing GET /api/playlists/{self.test_playlist_id}...")
-            try:
-                response = requests.get(f"{API_URL}/playlists/{self.test_playlist_id}")
-                self.assertEqual(response.status_code, 200)
-                playlist = response.json()
-                self.assertEqual(playlist["id"], self.test_playlist_id)
-                print("✅ Successfully retrieved specific playlist")
-            except Exception as e:
-                print(f"❌ Failed to get specific playlist: {str(e)}")
-        
-        # Test updating playlist tracks
-        if hasattr(self, 'test_playlist_id') and hasattr(self, 'test_track_id'):
-            print(f"Testing PUT /api/playlists/{self.test_playlist_id}/tracks...")
-            try:
-                response = requests.put(
-                    f"{API_URL}/playlists/{self.test_playlist_id}/tracks", 
-                    json=[self.test_track_id]
-                )
-                self.assertEqual(response.status_code, 200)
-                print("✅ Successfully updated playlist tracks")
-            except Exception as e:
-                print(f"❌ Failed to update playlist tracks: {str(e)}")
-    
-    def test_05_queue_management(self):
-        """Test queue management endpoints"""
-        print("\n🔍 Testing queue management endpoints...")
-        
-        # Skip if we don't have tracks
-        if not hasattr(self, 'test_track_id'):
-            print("⚠️ Skipping queue tests as no tracks were found")
-            return
-        
-        # Test creating a queue
-        print("Testing POST /api/queues...")
-        try:
-            response = requests.post(f"{API_URL}/queues", json=self.test_queue)
+            response = requests.post(f"{API_URL}/smart-queues", json=self.test_smart_queue)
             self.assertEqual(response.status_code, 200)
             queue = response.json()
-            self.assertEqual(queue["name"], self.test_queue["name"])
-            self.test_queue_id = queue["id"]
-            print("✅ Successfully created queue")
+            self.assertEqual(queue["name"], self.test_smart_queue["name"])
+            self.test_smart_queue_id = queue["id"]
+            print("✅ Successfully created smart queue")
         except Exception as e:
-            print(f"❌ Failed to create queue: {str(e)}")
+            print(f"❌ Failed to create smart queue: {str(e)}")
             return
         
-        # Test getting queues
-        print("Testing GET /api/queues...")
+        # Test getting smart queues
+        print("Testing GET /api/smart-queues...")
         try:
-            response = requests.get(f"{API_URL}/queues")
+            response = requests.get(f"{API_URL}/smart-queues")
             self.assertEqual(response.status_code, 200)
             queues = response.json()
             self.assertIsInstance(queues, list)
-            print(f"✅ Successfully retrieved {len(queues)} queues")
+            print(f"✅ Successfully retrieved {len(queues)} smart queues")
         except Exception as e:
-            print(f"❌ Failed to get queues: {str(e)}")
+            print(f"❌ Failed to get smart queues: {str(e)}")
         
-        # Test getting a specific queue
-        if hasattr(self, 'test_queue_id'):
-            print(f"Testing GET /api/queues/{self.test_queue_id}...")
+        # Test getting a specific smart queue
+        if hasattr(self, 'test_smart_queue_id'):
+            print(f"Testing GET /api/smart-queues/{self.test_smart_queue_id}...")
             try:
-                response = requests.get(f"{API_URL}/queues/{self.test_queue_id}")
+                response = requests.get(f"{API_URL}/smart-queues/{self.test_smart_queue_id}")
                 self.assertEqual(response.status_code, 200)
                 queue = response.json()
-                self.assertEqual(queue["id"], self.test_queue_id)
-                print("✅ Successfully retrieved specific queue")
+                self.assertEqual(queue["id"], self.test_smart_queue_id)
+                print("✅ Successfully retrieved specific smart queue")
             except Exception as e:
-                print(f"❌ Failed to get specific queue: {str(e)}")
+                print(f"❌ Failed to get specific smart queue: {str(e)}")
         
-        # Test updating queue settings
-        if hasattr(self, 'test_queue_id'):
-            print(f"Testing PUT /api/queues/{self.test_queue_id}...")
+        # Test generating auto queue
+        if hasattr(self, 'test_smart_queue_id') and hasattr(self, 'test_track_id'):
+            print(f"Testing POST /api/smart-queues/{self.test_smart_queue_id}/generate-auto...")
+            try:
+                response = requests.post(
+                    f"{API_URL}/smart-queues/{self.test_smart_queue_id}/generate-auto",
+                    params={"seed_track_id": self.test_track_id, "size": 10}
+                )
+                self.assertEqual(response.status_code, 200)
+                result = response.json()
+                print(f"✅ Successfully generated auto queue with {result.get('track_count', 0)} tracks")
+            except Exception as e:
+                print(f"❌ Failed to generate auto queue: {str(e)}")
+        
+        # Test updating smart queue
+        if hasattr(self, 'test_smart_queue_id'):
+            print(f"Testing PUT /api/smart-queues/{self.test_smart_queue_id}...")
             try:
                 update_data = {
                     "shuffle": True,
-                    "repeat": "queue"
+                    "repeat": "queue",
+                    "auto_refresh": True
                 }
                 response = requests.put(
-                    f"{API_URL}/queues/{self.test_queue_id}", 
+                    f"{API_URL}/smart-queues/{self.test_smart_queue_id}", 
                     json=update_data
                 )
                 self.assertEqual(response.status_code, 200)
-                print("✅ Successfully updated queue settings")
+                print("✅ Successfully updated smart queue settings")
             except Exception as e:
-                print(f"❌ Failed to update queue settings: {str(e)}")
+                print(f"❌ Failed to update smart queue settings: {str(e)}")
+    
+    def test_05_playback_session(self):
+        """Test playback session management for unlimited playback"""
+        print("\n🔍 Testing playback session management...")
+        
+        # Test creating a playback session
+        print("Testing POST /api/playback-session...")
+        try:
+            response = requests.post(f"{API_URL}/playback-session")
+            self.assertEqual(response.status_code, 200)
+            session = response.json()
+            self.playback_session_id = session["id"]
+            print("✅ Successfully created playback session")
+            print(f"   - Session ID: {self.playback_session_id}")
+            print(f"   - Unlimited mode: {'Enabled' if session.get('unlimited_mode') else 'Disabled'}")
+            print(f"   - Current queue type: {session.get('current_queue_type', 'unknown')}")
+        except Exception as e:
+            print(f"❌ Failed to create playback session: {str(e)}")
+            return
+        
+        # Test getting playback session
+        if hasattr(self, 'playback_session_id'):
+            print(f"Testing GET /api/playback-session/{self.playback_session_id}...")
+            try:
+                response = requests.get(f"{API_URL}/playback-session/{self.playback_session_id}")
+                self.assertEqual(response.status_code, 200)
+                session = response.json()
+                self.assertEqual(session["id"], self.playback_session_id)
+                print("✅ Successfully retrieved playback session")
+            except Exception as e:
+                print(f"❌ Failed to get playback session: {str(e)}")
+        
+        # Test switching queue type
+        if hasattr(self, 'playback_session_id'):
+            print(f"Testing PUT /api/playback-session/{self.playback_session_id}/switch-queue...")
+            try:
+                response = requests.put(
+                    f"{API_URL}/playback-session/{self.playback_session_id}/switch-queue",
+                    params={"queue_type": "auto"}
+                )
+                self.assertEqual(response.status_code, 200)
+                print("✅ Successfully switched to auto queue")
+                
+                # Switch back to user queue
+                response = requests.put(
+                    f"{API_URL}/playback-session/{self.playback_session_id}/switch-queue",
+                    params={"queue_type": "user"}
+                )
+                self.assertEqual(response.status_code, 200)
+                print("✅ Successfully switched back to user queue")
+            except Exception as e:
+                print(f"❌ Failed to switch queue type: {str(e)}")
+    
+    def test_06_smart_mixes(self):
+        """Test smart mixes functionality"""
+        print("\n🔍 Testing smart mixes functionality...")
+        
+        # Test getting smart mixes
+        print("Testing GET /api/smart-mixes...")
+        try:
+            response = requests.get(f"{API_URL}/smart-mixes")
+            self.assertEqual(response.status_code, 200)
+            mixes = response.json()
+            self.assertIsInstance(mixes, list)
+            print(f"✅ Successfully retrieved {len(mixes)} smart mixes")
+            
+            # Check mix types
+            mix_types = {}
+            for mix in mixes:
+                mix_type = mix.get('mix_type', 'unknown')
+                mix_types[mix_type] = mix_types.get(mix_type, 0) + 1
+            
+            print("   - Mix types distribution:")
+            for mix_type, count in mix_types.items():
+                print(f"     * {mix_type}: {count} mixes")
+            
+            # Save a mix ID for further testing
+            if mixes:
+                self.test_mix_id = mixes[0]["id"]
+        except Exception as e:
+            print(f"❌ Failed to get smart mixes: {str(e)}")
+        
+        # Test generating a new smart mix
+        print("Testing POST /api/smart-mixes/generate...")
+        try:
+            response = requests.post(
+                f"{API_URL}/smart-mixes/generate",
+                params={"mix_type": "discovery"},
+                json={"parameters": {"max_tracks": 20}}
+            )
+            self.assertEqual(response.status_code, 200)
+            mix = response.json()
+            print(f"✅ Successfully generated '{mix.get('name')}' smart mix with {len(mix.get('track_ids', []))} tracks")
+        except Exception as e:
+            print(f"❌ Failed to generate smart mix: {str(e)}")
+        
+        # Test refreshing a smart mix
+        if hasattr(self, 'test_mix_id'):
+            print(f"Testing POST /api/smart-mixes/{self.test_mix_id}/refresh...")
+            try:
+                response = requests.post(f"{API_URL}/smart-mixes/{self.test_mix_id}/refresh")
+                self.assertEqual(response.status_code, 200)
+                print("✅ Successfully refreshed smart mix")
+            except Exception as e:
+                print(f"❌ Failed to refresh smart mix: {str(e)}")
+    
+    def test_07_analytics(self):
+        """Test analytics endpoints"""
+        print("\n🔍 Testing analytics endpoints...")
+        
+        # Test getting listening stats
+        print("Testing GET /api/analytics/listening-stats...")
+        try:
+            response = requests.get(f"{API_URL}/analytics/listening-stats")
+            self.assertEqual(response.status_code, 200)
+            stats = response.json()
+            print("✅ Successfully retrieved listening stats:")
+            print(f"   - Total tracks: {stats.get('total_tracks', 0)}")
+            print(f"   - Total plays: {stats.get('total_plays', 0)}")
+            
+            # Check top genres
+            top_genres = stats.get('top_genres', [])
+            if top_genres:
+                print("   - Top genres by play count:")
+                for i, genre in enumerate(top_genres[:5], 1):
+                    print(f"     {i}. {genre.get('_id', 'Unknown')}: {genre.get('plays', 0)} plays")
+            
+            # Check recent tracks
+            recent_tracks = stats.get('recent_tracks', [])
+            if recent_tracks:
+                print(f"   - Recently played tracks: {len(recent_tracks)}")
+        except Exception as e:
+            print(f"❌ Failed to get listening stats: {str(e)}")
 
 def run_tests():
     """Run the test suite"""
-    print(f"🎵 Testing Music Player API at {API_URL}")
+    print(f"🎵 Testing Enhanced Music Player API at {API_URL}")
     
     # Create a test suite
     suite = unittest.TestSuite()
     suite.addTest(MusicPlayerAPITest('test_01_api_connectivity'))
     suite.addTest(MusicPlayerAPITest('test_02_folder_management'))
     suite.addTest(MusicPlayerAPITest('test_03_music_library'))
-    suite.addTest(MusicPlayerAPITest('test_04_playlist_management'))
-    suite.addTest(MusicPlayerAPITest('test_05_queue_management'))
+    suite.addTest(MusicPlayerAPITest('test_04_smart_queue_management'))
+    suite.addTest(MusicPlayerAPITest('test_05_playback_session'))
+    suite.addTest(MusicPlayerAPITest('test_06_smart_mixes'))
+    suite.addTest(MusicPlayerAPITest('test_07_analytics'))
     
     # Run the tests
     runner = unittest.TextTestRunner(verbosity=2)
