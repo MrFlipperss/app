@@ -25,6 +25,7 @@ from pathlib import Path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 from audio_analyzer import AudioAnalyzer, RecommendationEngine
+from playlist_ai import PlaylistAI
 import numpy as np
 
 ROOT_DIR = Path(__file__).parent
