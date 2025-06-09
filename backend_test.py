@@ -609,8 +609,34 @@ class MusicPlayerAPITest(unittest.TestCase):
             recent_tracks = stats.get('recent_tracks', [])
             if recent_tracks:
                 print(f"   - Recently played tracks: {len(recent_tracks)}")
+                for i, track in enumerate(recent_tracks[:3], 1):
+                    print(f"     {i}. {track.get('title', 'Unknown')} by {track.get('artist', 'Unknown Artist')}")
         except Exception as e:
             print(f"❌ Failed to get listening stats: {str(e)}")
+        
+        # Test analytics after playing tracks
+        if hasattr(self, 'test_track_id'):
+            print("Testing analytics after track playback...")
+            try:
+                # Play the track a few times to generate analytics data
+                for _ in range(3):
+                    play_response = requests.get(f"{API_URL}/tracks/{self.test_track_id}/stream", stream=True)
+                    if play_response.status_code == 200:
+                        play_response.close()  # Close the connection
+                
+                # Skip the track once
+                skip_response = requests.post(f"{API_URL}/tracks/{self.test_track_id}/skip")
+                
+                # Check updated analytics
+                response = requests.get(f"{API_URL}/analytics/listening-stats")
+                if response.status_code == 200:
+                    updated_stats = response.json()
+                    if updated_stats.get('total_plays', 0) > 0:
+                        print("✅ Analytics successfully recorded track plays")
+                    else:
+                        print("⚠️ Analytics may not be recording track plays correctly")
+            except Exception as e:
+                print(f"❌ Error testing analytics after playback: {str(e)}")
 
 def run_tests():
     """Run the test suite"""
