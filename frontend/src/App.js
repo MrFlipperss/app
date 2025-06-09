@@ -868,6 +868,59 @@ function App() {
               </div>
             )}
 
+            {currentView === 'ai-playlists' && (
+              <div className="ai-playlists-view">
+                <div className="section-header">
+                  <h2>AI Playlists</h2>
+                  <p>Create custom playlists with natural language prompts</p>
+                  <button 
+                    className="ai-generate-btn"
+                    onClick={() => setShowAiPlaylist(true)}
+                  >
+                    ✨ Generate New Playlist
+                  </button>
+                </div>
+                
+                <div className="ai-playlists-grid">
+                  {aiPlaylists.map(playlist => (
+                    <div key={playlist.id} className="ai-playlist-card">
+                      <div className="ai-playlist-artwork" onClick={() => playAiPlaylist(playlist)}>
+                        <SmartIcon />
+                        <div className="play-overlay">
+                          <PlayIcon />
+                        </div>
+                      </div>
+                      <div className="ai-playlist-info">
+                        <h4>{playlist.name}</h4>
+                        <p className="ai-prompt">"{playlist.prompt}"</p>
+                        <p className="ai-description">{playlist.description}</p>
+                        <div className="ai-playlist-meta">
+                          <span>{playlist.track_count} tracks</span>
+                          <span>{Math.round(playlist.estimated_duration)} min</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {aiPlaylists.length === 0 && (
+                  <div className="empty-ai-playlists">
+                    <div className="empty-icon">
+                      <SmartIcon />
+                    </div>
+                    <h3>No AI playlists yet</h3>
+                    <p>Create your first AI-generated playlist with a simple prompt!</p>
+                    <button 
+                      className="ai-generate-btn"
+                      onClick={() => setShowAiPlaylist(true)}
+                    >
+                      ✨ Generate First Playlist
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {currentView === 'folders' && (
               <div className="folders-view">
                 <div className="section-header">
