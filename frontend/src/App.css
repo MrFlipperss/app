@@ -161,6 +161,11 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: margin-right 0.3s ease;
+}
+
+.app-layout.show-queue .main-content {
+  margin-right: 300px;
 }
 
 .app.light .main-content {
@@ -173,10 +178,20 @@ body {
   justify-content: space-between;
   padding: 24px;
   border-bottom: 1px solid #282828;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .app.light .content-header {
   border-bottom-color: #e5e7eb;
+}
+
+.search-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 300px;
 }
 
 .search-bar {
@@ -186,8 +201,8 @@ body {
   background-color: #2a2a2a;
   border-radius: 500px;
   padding: 8px 16px;
-  width: 400px;
-  max-width: 50%;
+  flex: 1;
+  max-width: 400px;
 }
 
 .app.light .search-bar {
@@ -222,6 +237,62 @@ body {
 
 .app.light .search-bar input::placeholder {
   color: #6b7280;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.filter-controls select {
+  padding: 8px 12px;
+  background-color: #2a2a2a;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.app.light .filter-controls select {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  color: #000;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.control-btn {
+  padding: 8px;
+  background: none;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  color: #fff;
+  background-color: #2a2a2a;
+}
+
+.app.light .control-btn {
+  color: #6b7280;
+}
+
+.app.light .control-btn:hover {
+  color: #000;
+  background-color: #f3f4f6;
+}
+
+.control-btn.active {
+  color: #1db954;
+  background-color: rgba(29, 185, 84, 0.1);
 }
 
 .theme-toggle {
